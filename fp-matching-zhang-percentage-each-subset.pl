@@ -30,6 +30,10 @@
 # caaaagata  2 9 9,43
 # caaggagac  1 9 10
 # ...
+#
+# Difference from fp-matching-zhang-percentage.pl:
+# the subset column(last column) in the input file is not NA. then couting
+# is carried out within each subset defined in that column
 ###########################################################
 
 if($#ARGV !=2){
@@ -129,11 +133,13 @@ $fptmp=~ s/^\s+//;
 # 0. sequenceID. 1.vgeneName 2.n1 3.n2 4.functionality 5.subset/other
 
 
-$Nempty=0;
-$Nshort=0;
-$Nmatch=0;
-$Nno=0;
-$Nseq=0;
+# initiate hash. for multiple subset
+my %Nempty=();
+my %Nshort=();
+my %Nmatch=();
+my %Nno=  ();
+# new. count separately for each subset
+my %Nseq = ();
 
 for($i=$StartLine; $i <= $#stextA; $i++){
  @a=split($sDL, $stextA[$i]);
@@ -145,15 +151,18 @@ for($i=$StartLine; $i <= $#stextA; $i++){
   $n1=$a[3];
  }
 
+ # count within each subset
+ $subset=$a[$#a];
+
  $n1L=length($n1);
- $Nseq++;
+ $Nseq{$subset}++;
  
 #----------- only if n1 is not NA, and 5-mer or longer
 if($n1 eq "NA"){
- $Nempty++;
+ $Nempty{ $subset} ++;
 }
 elsif(length($n1) < 5){
- $Nshort++;
+ $Nshort{$subset} ++;
 }
 else{
 
@@ -165,14 +174,14 @@ else{
   $fpLtmp=length($fptmp);
 
    if($n1 =~ m/$fptmp/){ 
-    $Nmatch++;  
+    $Nmatch{ $subset}++;  
     $status=1;
     last;
    }
  } # end of looping through all fp's
 
 
- if($status==0){ $Nno++;}
+ if($status==0){ $Nno{$subset}++;}
 } # non-empty non-NA or short  n1
 
 } # end of looping through sequence file
@@ -181,14 +190,16 @@ else{
 print "\nfootprint file: $f2\n";
 print "n1/n2 seq file: $file\n\n";
 
-# $Nseq= $#stextA+1;
-print "total number of $fn12 seq: $Nseq\n";
-$Pempty= $Nempty/$Nseq;
-print "empty seq: $Nempty $Pempty\n";
-$Pshort= $Nshort/$Nseq;
-print "short seq: $Nshort $Pshort\n";
-$Pmatch = $Nmatch/$Nseq;
-print "matched seq: $Nmatch $Pmatch\n";
-$Pno = $Nno/$Nseq;
-print "no match seq: $Nno $Pno\n";
+for $k (keys %Nseq){
+ print "total number of $fn12 seq in subset $k: $Nseq{$k}\n";
+ $Pempty= $Nempty{$k}/$Nseq{$k};
+ print "empty seq: $Nempty{$k} $Pempty\n";
+ $Pshort= $Nshort{$k}/$Nseq{$k};
+ print "short seq: $Nshort{$k} $Pshort\n";
+ $Pmatch = $Nmatch{$k}/$Nseq{$k};
+ print "matched seq: $Nmatch{$k} $Pmatch\n";
+ $Pno = $Nno{$k}/$Nseq{$k};
+ print "no match seq: $Nno{$k} $Pno\n\n";
 
+}
+ 
